@@ -1,3 +1,6 @@
+## API global logic diagram
+![](attachements/API%20genereal%20structure%20—%20ENGLISH.drawio.png)
+
 ## Requirements
 ```
 tensoflow
