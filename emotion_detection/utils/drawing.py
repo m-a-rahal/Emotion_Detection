@@ -6,7 +6,8 @@ from emotion_detection.utils.drawing_functions import add_text_under_box, create
 
 
 class Drawer:
-    def __init__(self, emotions, box_color=(0, 255, 0), box_text_color=(0, 0, 0), selected_box_color=(255, 150, 0),
+    def __init__(self, emotions, box_color=(0, 255, 0), box_text_color=(0, 0, 0),
+                 selected_box_color=(255, 150, 0), box_thickness=2,
                  emotions_text_color=(200, 200, 200), correct_emotion_text_color=(220, 0, 0),
                  text_size=0.6, text_thickness=3.4):
         """
@@ -28,14 +29,15 @@ class Drawer:
         self.emotions_text_color = emotions_text_color
         self.box_text_color = box_text_color
         self.box_color = box_color
+        self.box_thickness = box_thickness
 
     def draw_box(self, image, prediction, box):
         (x, y, w, h) = box
-        cv2.rectangle(image, (x, y), (x + w, y + h), self.selected_box_color, 2)
+        cv2.rectangle(image, (x, y), (x + w, y + h), self.selected_box_color, self.box_thickness)
         prob, emotion = get_max_emotion(self.emotions, prediction)
         text = emotion + ' ' + f'{prob:.2f}'
         add_text_under_box(text, image, (x, y, w, h), color=self.selected_box_color, text_color=self.box_text_color,
-                           text_size=self.text_size, text_thickness=self.text_thickness)
+                           text_size=self.text_size, text_thickness=self.text_thickness, box_thickness=self.box_thickness)
         return image
 
     def draw_boxes(self, image, predictions, boxes):
@@ -43,11 +45,11 @@ class Drawer:
         image = np.array(image)
         for i, (x, y, w, h) in enumerate(boxes):
             prediction = predictions[i]
-            cv2.rectangle(image, (x, y), (x + w, y + h), self.box_color, 2)
+            cv2.rectangle(image, (x, y), (x + w, y + h), self.box_color, self.box_thickness)
             prob, emotion = get_max_emotion(self.emotions, prediction)
             text = emotion + ' ' + f'{prob:.2f}'
             add_text_under_box(text, image, (x, y, w, h), color=self.box_color, text_color=self.box_text_color,
-                               text_size=self.text_size, text_thickness=self.text_thickness)
+                               text_size=self.text_size, text_thickness=self.text_thickness, box_thickness=self.box_thickness)
         return image
     
     def show_square_images(self, images, predictions, figsize=(12, 12), font={'family': 'monospace', 'weight': 'bold', 'size': 16}):

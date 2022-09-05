@@ -106,7 +106,7 @@ def batch_from_images(square_images, target_size):
 
 
 class ImageEmotionDetector:
-    def __init__(self, model=None, face_detection_method=0,
+    def __init__(self, model=None, face_detection_method=0, min_confidence=0.9,
                  return_image=True, return_square_images=True,
                  verbose=0):
         """
@@ -117,17 +117,24 @@ class ImageEmotionDetector:
             - emotions : emotion names
         :param model: the model that predicts emotions, leave None to use default model
         :param face_detection_method: two options, 0 for HARR_CASCADE (default) and 1 for MTCNN
+        :param min_confidence: min confidence for face localization (to exclude low confidence boxes)
         :param return_image: Return the image with the bounding boxes drawn on it
         :param return_square_images: return the square images
         :param verbose: show model prediction progress bar : model.predict(verbose = verbose)
         """
+        self.min_confidence = min_confidence
         if model is None:
             model = load_default_model()  # use default model
         self.model = model
         self.verbose = verbose
         self.return_square_images = return_square_images
         self.return_image = return_image
+        # if the face detection method is callable, use it
         self.face_detection_method = face_detection_method
+        if callable(face_detection_method):
+            self.box_localization = lambda image, min_conf: face_detection_method(image, min_conf)
+        else:
+            self.box_localization = lambda image, min_conf: face_boxes_detection(image, self.face_detection_method, min_conf)
 
     def detect(self, image: Image) -> ImageDict:
         """
@@ -153,7 +160,7 @@ class ImageEmotionDetector:
         else:
             raise AttributeError('unsupported type of image, please use PIL image, or numpy image with RGB colors ('
                                  'not BGR!)')
-        boxes = face_boxes_detection(np_image, self.face_detection_method)
+        boxes = self.box_localization(np_image, self.min_confidence)
         # 3. make square images from boxes ======================================================================
         boxes, square_images = make_square_images(image, boxes)
         # if no good squares are present, return an empty dictionary

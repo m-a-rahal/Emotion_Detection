@@ -134,12 +134,12 @@ def show_dataframe(y_pred, y_true=None, emotions=[], style_formatter=table_style
 
 # text and boxes ============================================================================================
 def add_text_under_box(text, image, box, color=(0, 255, 0), text_color=(0, 0, 0), text_size=0.6,
-                       text_thickness=3.4):
+                       text_thickness=3.4, box_thickness=2):
     (x, y, w, h) = box
     # Prints the text.
     margin = int(20 * text_size)
     cv2.rectangle(image, (x, y - 2 * margin), (x + w, y), color, -1)
-    cv2.rectangle(image, (x, y - 2 * margin), (x + w, y), color, 2)
+    cv2.rectangle(image, (x, y - 2 * margin), (x + w, y), color, box_thickness)
     text_thickness = max(1, int(text_thickness * text_size))
     cv2.putText(image, text, (x + 5, y - margin + 5),
                 cv2.FONT_HERSHEY_SIMPLEX, text_size, text_color, text_thickness)

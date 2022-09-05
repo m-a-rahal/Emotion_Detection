@@ -1,5 +1,5 @@
 from tensorflow.keras.layers import Resizing, Rescaling, Lambda, Input
-from tensorflow.keras.models import load_model, Sequential
+from tensorflow.keras.models import load_model, Sequential, Model
 import tensorflow as tf
 
 # model names

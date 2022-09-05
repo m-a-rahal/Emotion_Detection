@@ -10,7 +10,7 @@ import cv2
 
 def face_detect(img, show_img=False, draw_rect=False, cascasdepath = "haarcascade_frontalface_default.xml",
         scaleFactor = 1.19,
-        minNeighbors = 5,
+        minNeighbors = 7,
         minSize = (30,30)):
 
     if isinstance(img, str) or isinstance(img, Path):
@@ -27,7 +27,7 @@ def face_detect(img, show_img=False, draw_rect=False, cascasdepath = "haarcascad
         minNeighbors = minNeighbors,
         minSize = minSize
         )
-
+    '''
     print("The number of faces found = ", len(faces))
 
     if draw_rect:
@@ -36,7 +36,7 @@ def face_detect(img, show_img=False, draw_rect=False, cascasdepath = "haarcascad
 
     if show_img:
         cv2.imshow("Faces found", image)
-        cv2.waitKey(0)
+        cv2.waitKey(0)'''
     return faces, image
 
 if __name__ == "__main__":

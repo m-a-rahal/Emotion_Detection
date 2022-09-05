@@ -5,8 +5,9 @@ from emotion_detection.face_localization.face_detection_methods.haarcascade impo
 from emotion_detection.face_localization.face_detection_methods.mtcnn import detect_faces as mtcnn_detect_faces
 
 
-def face_boxes_detection(image: numpy.ndarray, method):
+def face_boxes_detection(image: numpy.ndarray, method, min_confidence=0.9):
     """
+    :param min_confidence: faces with lower confidence will be discarded
     :param image: a numpy image
     :param method: 0 for HARR-CASCADE, 1 for MTCNN
     :return:
@@ -15,7 +16,8 @@ def face_boxes_detection(image: numpy.ndarray, method):
     if method == 1:
         faces = mtcnn_detect_faces(image)
         for face in faces:
-            boxes.append(face['box'])
+            if face['confidence'] >= min_confidence:
+                boxes.append(face['box'])
     elif method == 0:
         # gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         boxes, _ = harrcascade_detect_faces(image)
