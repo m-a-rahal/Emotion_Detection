@@ -9,6 +9,9 @@ pandas
 open-cv
 ```
 
+
+# Credits
+This work relies on other repositories :
 ## MobileNet pretrained on AffectNet model
 The default model included in this repository is a modified version of Savchenko et al. [MobileNet model](https://github.com/HSE-asavchenko/face-emotion-recognition/blob/main/models/affectnet_emotions/mobilenet_7.h5) pretrained on [AffectNet](http://mohammadmahoor.com/affectnet/).
 
@@ -47,7 +50,5 @@ The default model included in this repository is a modified version of Savchenko
 }
 ```
 
-
-## Credits
-This work relies on other repositories :
-- for face localization : see “[emotion_detection/face_localization/README.md](emotion_detection/face_localization/README.md)”
+## Face localization
+- see [emotion_detection/face_localization/README.md](emotion_detection/face_localization/README.md)
