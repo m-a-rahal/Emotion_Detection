@@ -69,6 +69,14 @@ class Drawer:
         return show_dataframe(predictions, true_predictions, self.emotions)
 
     def draw_boxes_and_margin(self, image, predictions, boxes, selected_idx=0):
+        """
+        Draws boxes for all faces, and probabilities for the selected face index
+        :param image
+        :param predictions
+        :param boxes
+        :param selected_idx: face or box index to be highlighted
+        :return: a modified copy of the image, numpy format
+        """
         # Draw boxes onto image
         np_image = np.array(image)  # get copy from image
         # draw all boxes

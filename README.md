@@ -7,6 +7,7 @@ tensoflow
 mtcnn
 pandas
 open-cv
+[jupyter-lab] # useful to display data — mostly pandas tables styling
 ```
 
 

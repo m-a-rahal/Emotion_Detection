@@ -85,6 +85,14 @@ def color_map(color, max_alpha, min_alpha):
 
 
 def table_styler(emotions, colors={}, highlight_color='', max_alpha='55', min_alpha='09'):
+    """
+    :param emotions: all possible columns (classes) of the table
+    :param colors: a dictionary mapping : class -> color (must be RGB hex format — not RGBA!), eg: {'anger' : '#AA0000'}
+    :param highlight_color: color used for the argmax class
+    :param max_alpha: max transparency/alpha of the table colors
+    :param min_alpha: min transparency/alpha of the table colors
+    :return: pandas table styler
+    """
     default_colors = {'anger': '#AA0000',
                       'fear': '#AA00AA',
                       'neutral': '#555599',

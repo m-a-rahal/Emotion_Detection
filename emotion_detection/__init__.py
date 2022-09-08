@@ -68,6 +68,9 @@ class ImageDictList(list):
         self.drawer = drawer
 
     def scroll_through_results(self, rotate_scroll=True):
+        """
+        :param rotate_scroll: rewind list of results when the index is out of bounds
+        """
         print('press 4 to show previous image')
         print('press 6 to show next image')
         print('press 8 and 2 to scroll through faces')
