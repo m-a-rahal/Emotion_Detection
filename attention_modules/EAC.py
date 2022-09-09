@@ -6,12 +6,6 @@ import numpy as np
 import os
 from pathlib import Path
 
-
-# used to ignore added layers while saving
-class IgnoredLayers(object):
-    pass
-
-
 class EACModelWrapper(Model):
     def __init__(self, model: Model, last_features: Layer, gap_layer: Layer, output_dense_layer: Layer,
                  lambda_factor=5.0,
@@ -30,22 +24,22 @@ class EACModelWrapper(Model):
         self.lambda_factor = lambda_factor
         self.model = model
         # define sub-model that ends right before GAP
-        self.other = IgnoredLayers()
-        self.other.cnn = Model(model.input, last_features.output, name='CNN')
-        self.other.fc = Model(gap_layer.input, model.output)
-        self.other.output_layer = output_dense_layer
+        self.cnn = Model(model.input, last_features.output, name='CNN')
+        self.fc = Model(gap_layer.input, model.output)
+        self.output_layer = output_dense_layer
         self.mean_eac_loss = Mean(name='eac_loss')
 
-    def eac_loss(self, x1, x2, y_true):
+    def eac_loss(self, x1, x2, y_true, sample_weight):
         # generate features
-        features1 = self.other.cnn(x1, training=True)
-        features2 = self.other.cnn(x2, training=True)
+        features1 = self.cnn(x1, training=True)
+        features2 = self.cnn(x2, training=True)
         # only pass non-flipped features to get predictions
-        y_pred = self.other.fc(features1, training=True)
+        y_pred = self.fc(features1, training=True)
         # compute classification loss
-        classif_loss = self.compiled_loss(y_true, y_pred, regularization_losses=self.losses)
+        classif_loss = self.compiled_loss(y_true, y_pred, regularization_losses=self.losses,
+                                          sample_weight=sample_weight)
         # get weights of last layer
-        weights = self.other.output_layer.trainable_weights[0]
+        weights = self.output_layer.trainable_weights[0]
         # compute CAM maps form features
         cam1 = features1 @ weights
         cam2 = features2 @ weights
@@ -73,21 +67,25 @@ class EACModelWrapper(Model):
         return features @ weights
 
     def train_step(self, data):
-        x1, y_true = data
+        if len(data) == 3:
+            x1, y_true, sample_weight = data
+        else:
+            sample_weight = None
+            x1, y_true = data
         # data would be already cropped with the help of the ImageDataGenerator
         if self.preprocessing_layers:
             x1 = self.preprocessing_layers(x1, training=True)
         # generate flipped image
         x2 = x1[:, :, ::-1, :]
         with tf.GradientTape() as tape:
-            loss, y_pred = self.eac_loss(x1, x2, y_true)
+            loss, y_pred = self.eac_loss(x1, x2, y_true, sample_weight)
 
         trainable_vars = self.model.trainable_variables
         gradients = tape.gradient(loss, trainable_vars)
         # Update weights
         self.optimizer.apply_gradients(zip(gradients, trainable_vars))
         # Update metrics (includes the metric that tracks the loss)
-        self.compiled_metrics.update_state(y_true, y_pred)
+        self.compiled_metrics.update_state(y_true, y_pred, sample_weight=sample_weight)
         self.mean_eac_loss.update_state(loss)
         # Return a dict mapping metric names to current value
         res = {m.name: m.result() for m in self.metrics}
@@ -188,7 +186,19 @@ class SaveBest(tf.keras.callbacks.Callback):
             self.model.save(self.save_file, include_optimizer=self.include_optimizer)
 
     def on_epoch_end(self, epoch, logs=None):
-        new_value = logs[self.metric]
+        new_value = logs[self.monitored_metric]
         if self.improved(self.best_value, new_value) or not self.save_best_only:
             self.save_model()
             self.best_value = new_value
+
+
+class OnEpochEndCallback(tf.keras.callbacks.Callback):
+    def __init__(self, behavior):
+        """
+        This is a generic callback that takes a callable object describing what to do at end of epoch
+        :param behavior: a callable object that takes 3 parameters: epoch, logs and model, and performs changes
+        """
+        self.behavior = behavior
+
+    def on_epoch_end(self, epoch, logs=None):
+        self.behavior(epoch, logs, self.model)
