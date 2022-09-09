@@ -6,9 +6,10 @@ import numpy as np
 import os
 from pathlib import Path
 
+
 class EACModelWrapper(Model):
     def __init__(self, model: Model, last_features: Layer, gap_layer: Layer, output_dense_layer: Layer,
-                 lambda_factor=5.0,
+                 lambda_factor=5.0, ignore_sample_weight_for_eac_loss=True,
                  preprocessing_layers=None):
         """ implementation of the paper :
          « Learn From All: Erasing Attention Consistency for Noisy Label Facial Expression Recognition »
@@ -18,8 +19,10 @@ class EACModelWrapper(Model):
          :param last_features: the model's last features before the GlobalAveragePooling layer
          :param gap_layer: the model's GlobalAveragePooling layer (GAP)
          :param output_dense_layer: the model's output neurons that come straight after GAP layer
+         :param ignore_sample_weight_for_eac_loss: turning this to True might cause loss spikes when sample weights are high
         """
         super().__init__(name=model.name)
+        self.ignore_sample_weight_for_eac_loss = ignore_sample_weight_for_eac_loss
         self.preprocessing_layers = preprocessing_layers
         self.lambda_factor = lambda_factor
         self.model = model
@@ -36,6 +39,8 @@ class EACModelWrapper(Model):
         # only pass non-flipped features to get predictions
         y_pred = self.fc(features1, training=True)
         # compute classification loss
+        if self.ignore_sample_weight_for_eac_loss:
+            sample_weight = None
         classif_loss = self.compiled_loss(y_true, y_pred, regularization_losses=self.losses,
                                           sample_weight=sample_weight)
         # get weights of last layer
@@ -66,6 +71,8 @@ class EACModelWrapper(Model):
         # compute CAM maps form features
         return features @ weights
 
+    # see this tutorial for more details about custom training loops :
+    # “Customize what happens in Model.fit” https://www.tensorflow.org/guide/keras/customizing_what_happens_in_fit
     def train_step(self, data):
         if len(data) == 3:
             x1, y_true, sample_weight = data
@@ -106,6 +113,10 @@ class EACModelWrapper(Model):
 
     def save(self, *args, **kwargs):
         return self.model.save(*args, **kwargs)
+
+    @property
+    def layers(self):
+        return self.model.layers
 
 
 # random eraser implementation
