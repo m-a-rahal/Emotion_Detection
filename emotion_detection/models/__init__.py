@@ -1,3 +1,6 @@
+import cv2
+import numpy as np
+from tensorflow import cast as tf_cast, float32 as tf_float32
 from tensorflow.keras.layers import Resizing, Rescaling, Lambda, Input
 from tensorflow.keras.models import load_model, Sequential, Model
 import tensorflow as tf
@@ -7,14 +10,17 @@ from emotion_detection.models.resnet import inceptionResNetV1
 PRESET_MobileNet_FER2013 = 0
 PRESET_MobileNet_FERplus = 1
 PRESET_ResNet_FER2013 = 2
+PRESET_ResNet_FERplus = 3
 # model paths
 MobileNet_FER2013_path = 'emotion_detection/models/mobilenet_fer2013.h5'
 MobileNet_FERplus_path = 'emotion_detection/models/mobilenet_ferplus.h5'
-ResNet_FER2013_path = 'emotion_detection/models/InceptionResnet.h5'
+ResNet_FER2013_path = 'emotion_detection/models/resnet_FER2013.h5'
+ResNet_FERplus_path = 'emotion_detection/models/resnet_FER+.h5'
 # emotion names
 FER2013_emotions = ['anger', 'disgust', 'fear', 'happiness', 'neutral', 'sadness', 'surprise']
+FERplus_emotions = FER2013_emotions + ['contempt', 'unknown']
 MobileNet_FER2013_emotions = FER2013_emotions
-MobileNet_FERplus_emotions = MobileNet_FER2013_emotions + ['contempt', 'unknown']
+MobileNet_FERplus_emotions = FERplus_emotions
 # preprocessing
 MobileNet_preprocessing = Sequential([
     # Input((224,224, 3)),
@@ -36,6 +42,7 @@ ResNet_preprocessing = Sequential([
     # Resizing(160, 160) # not needed
 ])
 
+ResNet_CAM_layers = ['Mixed_7a_Branch_2_Conv2d_0b_3x3_Activation', 'gap', 'output']
 
 def load_default_model(preset=0):
     if preset == PRESET_MobileNet_FER2013:
@@ -47,8 +54,13 @@ def load_default_model(preset=0):
         model_preset(model, preset)
         return model
     elif preset == PRESET_ResNet_FER2013:
-        model = inceptionResNetV1()
+        model = inceptionResNetV1(n_classes=7)
         model.load_weights(ResNet_FER2013_path)
+        model_preset(model, preset)
+        return model
+    elif preset == PRESET_ResNet_FERplus:
+        model = inceptionResNetV1(n_classes=9)
+        model.load_weights(ResNet_FERplus_path)
         model_preset(model, preset)
         return model
     return None
@@ -78,9 +90,24 @@ def model_preset(model: Model, preset) -> Model:
         model.preprocessing = ResNet_preprocessing
         # add emotions
         model.emotions = FER2013_emotions
+        # add CAM layers
+        model.cam_layers = ResNet_CAM_layers
+    elif preset == PRESET_ResNet_FERplus:
+        # add preprocessing
+        model.preprocessing = ResNet_preprocessing
+        # add emotions
+        model.emotions = FERplus_emotions
+        # add CAM layers
+        model.cam_layers = ResNet_CAM_layers
 
 
 def get_max_emotion(emotions, prediction):
     """ :returns : probability, emotion"""
     label = tf.argmax(prediction)
     return tf.reduce_max(prediction) * 100, emotions[int(label)]
+
+
+def batch_from_images(square_images, target_size):
+    resized = [cv2.resize(square, target_size) for square in square_images]
+    nd_array = np.array(resized)
+    return tf_cast(nd_array, tf_float32)

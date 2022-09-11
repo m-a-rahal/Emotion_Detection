@@ -6,12 +6,10 @@ import cv2
 import numpy as np
 
 from emotion_detection.face_localization import face_boxes_detection
-from emotion_detection.models import load_default_model, get_max_emotion
+from emotion_detection.models import load_default_model, get_max_emotion, batch_from_images
 from emotion_detection.utils.cropping import make_square_images
 from emotion_detection.utils.drawing import add_text_under_box, create_probabilities_text_image, Drawer
 from emotion_detection.utils.file_manager import create_path
-from tensorflow import cast as tf_cast
-from tensorflow import float32 as tf_float32
 from tensorflow.keras.utils import load_img
 
 # face detection methods ===========================================================
@@ -37,6 +35,9 @@ class ImageDict(dict):
     def show_image_with_boxes(self, drawer: Drawer = None):
         return Image.fromarray(self.draw_boxes(drawer))
 
+    def show_box(self, box_idx):
+        return Image.fromarray(self.square_images[box_idx])
+
     def show_boxes(self, drawer: Drawer = None):
         if drawer is None:
             drawer = Drawer(self.emotions)
@@ -52,13 +53,28 @@ class ImageDict(dict):
             drawer = Drawer(self.emotions)
         return drawer.show_as_dataframe(self.predictions)
 
-    def draw_boxes_and_margin(self, drawer: Drawer = None, selected_idx=0):
+    def draw_boxes_and_margin(self, selected_idx=0, drawer: Drawer = None):
         if drawer is None:
             drawer = Drawer(self.emotions)
         return drawer.draw_boxes_and_margin(self.image, self.predictions, self.boxes, selected_idx=selected_idx)
 
-    def show_boxes_and_margin(self, drawer: Drawer = None, selected_idx=0):
-        return Image.fromarray(self.draw_boxes_and_margin(drawer, selected_idx))
+    def show_boxes_and_margin(self, selected_idx=0, drawer: Drawer = None):
+        return Image.fromarray(self.draw_boxes_and_margin(selected_idx, drawer))
+
+    def show_cam_heatmaps(self, model, argmax_cam=True, update_predictions=True, drawer: Drawer = None):
+        if drawer is None:
+            drawer = Drawer(self.emotions)
+        heatmap_squares, new_predictions = drawer.apply_CAM_heatmaps(model, self.square_images, argmax_cam=argmax_cam)
+        # create a copy of this object
+        res = ImageDict()
+        res.update(**self)
+        # add heatmaps instead of images
+        res.square_images = heatmap_squares
+        if update_predictions:
+            predictions = new_predictions
+        else:
+            predictions = self.predictions
+        return drawer.show_square_images(heatmap_squares, predictions)
 
 
 class ImageDictList(list):
@@ -100,12 +116,6 @@ class ImageDictList(list):
             if action in map(ord, '0q'):
                 break
         cv2.destroyAllWindows()
-
-
-def batch_from_images(square_images, target_size):
-    resized = [cv2.resize(square, target_size) for square in square_images]
-    nd_array = np.array(resized)
-    return tf_cast(nd_array, tf_float32)
 
 
 class ImageEmotionDetector:

@@ -3,7 +3,8 @@ import numpy as np
 from emotion_detection.models import get_max_emotion
 from emotion_detection.utils.drawing_functions import add_text_under_box, create_probabilities_text_image, \
     show_dataframe, show_images
-
+from attention_modules.EAC import EACModelWrapper
+from emotion_detection import batch_from_images
 
 class Drawer:
     def __init__(self, emotions, box_color=(0, 255, 0), box_text_color=(0, 0, 0),
@@ -87,4 +88,38 @@ class Drawer:
         # draw margin
         return self.add_margin_text(np_image, predictions[selected_idx])
 
+    def apply_CAM_heatmaps(self, model, images, argmax_cam=True):
+        assert hasattr(model, 'cam_layers'), "the given model does not support CAM," \
+                                             "please specify CAM layers in model, eg : " \
+                                             "model.cam_layers = ['conv_25', 'GAP', 'output']"
+        cam_model = EACModelWrapper(model, model.get_layer(model.cam_layers[0]),
+                                    model.get_layer(model.cam_layers[1]),
+                                    model.get_layer(model.cam_layers[2]))
 
+        # 4. make batch of images and pass them to the model, this will use the input shape of the model
+        batch = batch_from_images(images, target_size=model.input.shape[1:3])
+        batch = model.preprocessing(batch)
+        predictions, cam = cam_model.prediction_and_cam(batch)
+        predictions = predictions.numpy()
+        cam = cam.numpy()
+        results = []
+        for i in range(cam.shape[0]):
+            if argmax_cam:
+                combined_cam = cam[i, :, :, predictions[i].argmax()]
+            else:
+                combined_cam = np.dot(cam[i], predictions[i])
+            combined_cam = min_max(combined_cam)
+            combined_cam = cv2.resize(combined_cam, images[i].shape[0:2], cv2.INTER_LINEAR)
+            heatmap = cv2.applyColorMap(combined_cam, cv2.COLORMAP_JET)
+            image = cv2.addWeighted(heatmap, 0.6, images[i], 0.4, 0)
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            results.append(image)
+
+        return results, predictions
+
+
+def min_max(x : np.ndarray, new_max=255, new_min=0, dtype=np.uint8):
+    min_ = x.min()
+    max_ = x.max()
+    new_x = new_max * (x - min_)/(max_ - min_) + new_min
+    return new_x.astype(dtype)

@@ -56,20 +56,24 @@ class EACModelWrapper(Model):
         loss = classif_loss + self.lambda_factor * consist_loss
         return loss, y_pred
 
-    def compute_cam(self, tensor, training=False):
+    def compute_cam(self, tensor, training=False, return_features=False):
         """
         computes CAM map as described in « Learning Deep Features for Discriminative Localization », 2015,
         by B. Zhou, A. Khosla, A. Lapedriza, A. Oliva, et A. Torralba, doi: 10.48550/ARXIV.1512.04150.
         :param tensor: input tensor
         :param training:
-        :return: returns the CAM map
+        :return: returns the CAM map only, or [cam, features] if return_features is True
         """
         # generate features
         features = self.cnn(tensor, training=training)
         # get weights of last layer
         weights = self.output_layer.trainable_weights[0]
         # compute CAM maps form features
-        return features @ weights
+        cam = features @ weights
+        if return_features:
+            return cam, features
+        else:
+            return cam
 
     # see this tutorial for more details about custom training loops :
     # “Customize what happens in Model.fit” https://www.tensorflow.org/guide/keras/customizing_what_happens_in_fit
@@ -117,6 +121,11 @@ class EACModelWrapper(Model):
     @property
     def layers(self):
         return self.model.layers
+
+    def prediction_and_cam(self, x, training=False):
+        cam, features = self.compute_cam(x, training=training, return_features=True)
+        predictions = self.fc(features)
+        return predictions, cam
 
 
 # random eraser implementation

@@ -23,7 +23,7 @@ from tensorflow.keras.layers import add
 from tensorflow.keras import backend as K
 
 
-def inceptionResNetV1() -> Model:
+def inceptionResNetV1(n_classes) -> Model:
     inputs = Input((160, 160, 3))
     x = Conv2D(32, 3, strides=2, padding='valid', use_bias=False, name='Conv2d_1a_3x3')(inputs)
     x = BatchNormalization(axis=3, momentum=0.995, epsilon=0.001, scale=False, name='Conv2d_1a_3x3_BatchNorm')(x)
@@ -680,7 +680,7 @@ def inceptionResNetV1() -> Model:
     # x = add([x, up])
     x = GlobalAveragePooling2D(name='gap')(x)
     x = Dropout(0.2)(x)
-    outputs = Dense(7, activation='softmax', name='output', use_bias=False)(x)
+    outputs = Dense(n_classes, activation='softmax', name='output', use_bias=False)(x)
     model = Model(inputs, outputs, name='InceptionResnet')
     return model
 
