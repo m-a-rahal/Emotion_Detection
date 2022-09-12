@@ -108,7 +108,7 @@ def table_styler(emotions, colors={}, highlight_color='', max_alpha='55', min_al
 
     def styler(style):
         # make values look like percentages
-        style.format(lambda value: f'{100 * round(value, 2):.02f}%')
+        style.format(lambda value: f'{round(100*value, 2):.02f}%')
         # give color code to columns the columns
         for emotion in emotions:
             style.applymap(color_map(colors[emotion], max_alpha, min_alpha), subset=[emotion])

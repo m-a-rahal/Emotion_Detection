@@ -2,7 +2,13 @@ import numpy as np
 from PIL import Image
 
 
-def make_square_images(image: Image, boxes):
+def make_square_images(image: Image.Image, boxes):
+    """
+    boxes are turned to squares and filtered
+    :param image:
+    :param boxes:
+    :return: returns (good_boxes, square_images)
+    """
     good_boxes = []
     square_images = []
     for box in boxes:
@@ -25,8 +31,10 @@ def make_square_images(image: Image, boxes):
     return good_boxes, square_images
 
 
-def crop(box, image: Image):
+def crop(box, image: Image.Image):
     x, y, w, h = box
+    if not isinstance(image, Image.Image):
+        image = Image.fromarray(image)
     try:
         cropped = image.crop((x, y, x + w, y + h))
         return cropped

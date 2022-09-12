@@ -1,10 +1,9 @@
 import cv2
 import numpy as np
-from emotion_detection.models import get_max_emotion
+from emotion_detection.models import get_max_emotion, batch_from_images
 from emotion_detection.utils.drawing_functions import add_text_under_box, create_probabilities_text_image, \
     show_dataframe, show_images
 from attention_modules.EAC import EACModelWrapper
-from emotion_detection import batch_from_images
 
 class Drawer:
     def __init__(self, emotions, box_color=(0, 255, 0), box_text_color=(0, 0, 0),
@@ -118,7 +117,7 @@ class Drawer:
         return results, predictions
 
 
-def min_max(x : np.ndarray, new_max=255, new_min=0, dtype=np.uint8):
+def min_max(x: np.ndarray, new_max=255, new_min=0, dtype=np.uint8):
     min_ = x.min()
     max_ = x.max()
     new_x = new_max * (x - min_)/(max_ - min_) + new_min

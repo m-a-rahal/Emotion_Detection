@@ -8,7 +8,7 @@ from pathlib import Path
 import cv2
 
 
-def face_detect(img, show_img=False, draw_rect=False, cascasdepath = "haarcascade_frontalface_default.xml",
+def face_detect(img, cascasdepath="haarcascade_frontalface_default.xml",
         scaleFactor = 1.19,
         minNeighbors = 7,
         minSize = (30,30)):
