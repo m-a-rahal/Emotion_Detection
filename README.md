@@ -1,5 +1,8 @@
-## API global logic diagram
+## API global logic
 ![](attachements/API%20genereal%20structure%20—%20ENGLISH.drawio.png)
+
+## See the models in action
+To demonstrate the performance of the models we trained/fine tuned, see [This Collab notebook](https://colab.research.google.com/drive/1Rx6vD0kzd29Sp6wZON6-b3TzWp3-mJe4?usp=sharing)
 
 ## Requirements
 ```
